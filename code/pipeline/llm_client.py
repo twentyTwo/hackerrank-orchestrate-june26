@@ -12,6 +12,8 @@ class ModelConfig:
     base_url: str = "http://localhost:11434"
     max_tokens: int = 2048
     temperature: float = 0.0
+    extended_thinking: bool = False
+    thinking_budget: int = 8000
 
 
 def call_vlm(
@@ -73,12 +75,27 @@ def _call_claude(
         )
     content.append({"type": "text", "text": user_prompt})
 
-    response = client.messages.create(
-        model=config.model,
-        max_tokens=config.max_tokens,
-        system=system_prompt,
-        messages=[{"role": "user", "content": content}],
-    )
+    if config.extended_thinking:
+        response = client.beta.messages.create(
+            model=config.model,
+            max_tokens=max(config.max_tokens, config.thinking_budget + 2048),
+            system=system_prompt,
+            messages=[{"role": "user", "content": content}],
+            thinking={"type": "adaptive"},
+            output_config={"effort": "high"},
+            betas=["interleaved-thinking-2025-05-14"],
+        )
+    else:
+        response = client.messages.create(
+            model=config.model,
+            max_tokens=config.max_tokens,
+            system=system_prompt,
+            messages=[{"role": "user", "content": content}],
+        )
+    # return only the text block (thinking blocks are internal reasoning)
+    for block in response.content:
+        if block.type == "text":
+            return block.text
     return response.content[0].text
 
 
@@ -91,8 +108,12 @@ def config_from_env() -> ModelConfig:
             base_url=os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
         )
     if provider == "claude":
+        thinking = os.environ.get("EXTENDED_THINKING", "false").lower() == "true"
+        budget = int(os.environ.get("THINKING_BUDGET_TOKENS", "8000"))
         return ModelConfig(
             provider="claude",
             model=os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6"),
+            extended_thinking=thinking,
+            thinking_budget=budget,
         )
     raise ValueError(f"Unknown LLM_PROVIDER: {provider}")

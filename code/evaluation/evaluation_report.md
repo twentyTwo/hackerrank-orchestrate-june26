@@ -1,28 +1,28 @@
 # Evaluation Report
 
 ## Configuration
-- Provider: `ollama`
-- Model: `gemma4:latest`
+- Provider: `claude`
+- Model: `claude-opus-4-8`
 - Sample rows: 20
 
 ## Field-Level Accuracy
 | Field | Score |
 |---|---|
-| `claim_status` | 0.500 |
-| `evidence_standard_met` | 0.650 |
-| `severity` | 0.350 |
+| `claim_status` | 0.750 |
+| `evidence_standard_met` | 0.850 |
+| `severity` | 0.500 |
 | `issue_type` | 0.550 |
 | `valid_image` | 0.900 |
-| `risk_flags_set_f1` | 0.506 |
+| `risk_flags_set_f1` | 0.568 |
 
 ## Confusion Matrix — claim_status
 Rows = gold, Columns = predicted
 
 ```
                                        supported            contradicted  not_enough_information
-               supported                       8                       0                       5
-            contradicted                       3                       0                       2
-  not_enough_information                       0                       0                       2
+               supported                      11                       2                       0
+            contradicted                       1                       4                       0
+  not_enough_information                       1                       1                       0
 ```
 
 ## Operational Analysis
